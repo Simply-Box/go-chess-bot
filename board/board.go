@@ -27,10 +27,6 @@ import (
 // check if != 0 istället för true
 // get legal moves från kung kan vara 2> så måste jag flytta kungen
 
-// Working on: isOnBoard(row, col int) bool
-// Created and implemented isOnBoard()
-// changed variabel names
-
 type Move struct {
 	FromRow, FromCol int
 	ToRow, ToCol     int
@@ -743,7 +739,7 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 		pawn = "p"
 	}
 	for _, negPos := range []int{-1, 1} {
-		newRow, newCol := row + pawnDir, col + negPos
+		newRow, newCol := row+pawnDir, col+negPos
 		if isOnBoard(newRow, newCol) && board[newRow][newCol] == pawn {
 			return true
 		}
