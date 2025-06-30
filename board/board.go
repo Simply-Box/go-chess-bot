@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 )
+// Patrik joins the battle!
 
 //TODO: change board into a hexadecimal and introduce bitboards
 //TODO: Simulate MakeMove with a SimulateMove function, only used for checks or something
