@@ -243,61 +243,18 @@ func GenerateAllMoves(gs *GameState) []Move {
 		//}
 
 		//if len(checkingPieces) >= 2 {
+
 		//	return GenerateKingMoves(board, row, col, isWhite, gs)
 		//}
 
 	} else {
+
 		for row := range 8 {
 			for col := range 8 {
-				switch board[row][col] {
-				case "P":
-					if isWhite {
-						allMoves = append(allMoves, GeneratePawnMoves(board, row, col, true, gs.EnPassant)...)
-					}
-				case "p":
-					if !isWhite {
-						allMoves = append(allMoves, GeneratePawnMoves(board, row, col, false, gs.EnPassant)...)
-					}
-				case "N":
-					if isWhite {
-						allMoves = append(allMoves, GenerateKnightMoves(board, row, col, true)...)
-					}
-				case "n":
-					if !isWhite {
-						allMoves = append(allMoves, GenerateKnightMoves(board, row, col, false)...)
-					}
-				case "B":
-					if isWhite {
-						allMoves = append(allMoves, GenerateBishopMoves(board, row, col, true)...)
-					}
-				case "b":
-					if !isWhite {
-						allMoves = append(allMoves, GenerateBishopMoves(board, row, col, false)...)
-					}
-				case "R":
-					if isWhite {
-						allMoves = append(allMoves, GenerateRookMoves(board, row, col, true)...)
-					}
-				case "r":
-					if !isWhite {
-						allMoves = append(allMoves, GenerateRookMoves(board, row, col, false)...)
-					}
-				case "Q":
-					if isWhite {
-						allMoves = append(allMoves, GenerateQueenMoves(board, row, col, true)...)
-					}
-				case "q":
-					if !isWhite {
-						allMoves = append(allMoves, GenerateQueenMoves(board, row, col, false)...)
-					}
-				case "K":
-					if isWhite {
-						allMoves = append(allMoves, GenerateKingMoves(board, row, col, true, gs)...)
-					}
-				case "k":
-					if !isWhite {
-						allMoves = append(allMoves, GenerateKingMoves(board, row, col, false, gs)...)
-					}
+				piece := board[row][col]
+
+				if !isEnemy(piece, isWhite) && piece != "." {
+					allMoves = append(allMoves, GeneratePieceMoves(gs, row, col)...)
 				}
 			}
 		}
@@ -305,7 +262,8 @@ func GenerateAllMoves(gs *GameState) []Move {
 	return allMoves
 }
 
-func GetCheckingPieces(gs *GameState, isWhite bool) []Coord {
+func GetCheckingPieces(gs *GameState) []Coord {
+	isWhite := gs.WhiteToMove
 	var checkingPieces []Coord
 	board := gs.Board
 
@@ -315,7 +273,7 @@ func GetCheckingPieces(gs *GameState, isWhite bool) []Coord {
 	for row := range 8 {
 		for col := range 8 {
 			piece := board[row][col]
-			if piece == "." || (isWhite && isEnemy(piece, !isWhite)) || (!isWhite && isEnemy(piece, isWhite)) {
+			if !isEnemy(piece, isWhite) {
 				continue
 			}
 			// Generate pseudo-legal moves for this piece only
@@ -596,6 +554,40 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	}
 
 	return moves
+}
+
+func GeneratePieceMoves(gs *GameState, row, col int) []Move {
+	board := gs.Board
+	piece := board[row][col]
+	var moveList []Move
+
+	switch piece {
+	case "P":
+		moveList = GeneratePawnMoves(board, row, col, true, gs.EnPassant)
+	case "p":
+		moveList = GeneratePawnMoves(board, row, col, false, gs.EnPassant)
+	case "N":
+		moveList = GenerateKnightMoves(board, row, col, true)
+	case "n":
+		moveList = GenerateKnightMoves(board, row, col, false)
+	case "B":
+		moveList = GenerateBishopMoves(board, row, col, true)
+	case "b":
+		moveList = GenerateBishopMoves(board, row, col, false)
+	case "R":
+		moveList = GenerateRookMoves(board, row, col, true)
+	case "r":
+		moveList = GenerateRookMoves(board, row, col, false)
+	case "Q":
+		moveList = GenerateQueenMoves(board, row, col, true)
+	case "q":
+		moveList = GenerateQueenMoves(board, row, col, false)
+	case "K":
+		moveList = GenerateKingMoves(board, row, col, true, gs)
+	case "k":
+		moveList = GenerateKingMoves(board, row, col, false, gs)
+	}
+	return moveList
 }
 
 func isEnemy(piece string, isWhite bool) bool {
