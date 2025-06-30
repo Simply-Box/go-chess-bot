@@ -26,6 +26,7 @@ import (
 // For function is square attacked
 // change so that: return true actually increments var k with one and return k in the end.
 // check if != 0 istället för true
+
 // get legal moves från kung kan vara 2> så måste jag flytta kungen
 
 type Move struct {
