@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 )
+
 // Patrik joins the battle!
 
 //TODO: change board into a hexadecimal and introduce bitboards
@@ -17,7 +18,6 @@ import (
 
 //TODO: Pointers for big structs or things
 
-//TODO: isOnBoard(row, col int) bool
 //TODO: unit test
 //TODO: testa att det fungerar
 //TODO: gs as parameter instead of board+iswhite
@@ -25,7 +25,11 @@ import (
 // For function is square attacked
 // change so that: return true actually increments var k with one and return k in the end.
 // check if != 0 istället för true
-// get legal moves från kung kan vara 2> så måste jag flytta kungen 
+// get legal moves från kung kan vara 2> så måste jag flytta kungen
+
+// Working on: isOnBoard(row, col int) bool
+// Created and implemented isOnBoard()
+// changed variabel names
 
 type Move struct {
 	FromRow, FromCol int
@@ -383,7 +387,7 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 	// Captures
 	for _, colOffset := range []int{-1, 1} {
 		newCol := col + colOffset
-		if newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8 {
+		if isOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target != "." && isEnemy(target, isWhite) {
 				if (isWhite && newRow == 0) || (!isWhite && newRow == 7) {
@@ -443,7 +447,7 @@ func GenerateKnightMoves(board [][]string, row, col int, isWhite bool) []Move {
 		newRow := row + offset[0]
 		newCol := col + offset[1]
 
-		if newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8 {
+		if isOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." || isEnemy(target, isWhite) {
 				move := Move{
@@ -467,7 +471,7 @@ func GenerateSlidingMoves(board [][]string, row, col int, isWhite bool, directio
 
 	for _, dir := range directions {
 		newRow, newCol := row+dir[0], col+dir[1]
-		for newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8 {
+		for isOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." {
 				moves = append(moves, Move{
@@ -513,7 +517,7 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	for _, dir := range queenDirs {
 		newRow, newCol := row+dir[0], col+dir[1]
 
-		if newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8 {
+		if isOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." || isEnemy(target, isWhite) {
 				capture := ""
@@ -746,9 +750,9 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 		pawnDir = 1
 		pawn = "p"
 	}
-	for _, dc := range []int{-1, 1} {
-		r, c := row+pawnDir, col+dc
-		if r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] == pawn {
+	for _, negPos := range []int{-1, 1} {
+		newRow, newCol := row + pawnDir, col + negPos
+		if isOnBoard(newRow, newCol) && board[newRow][newCol] == pawn {
 			return true
 		}
 	}
@@ -758,8 +762,8 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 		knight = "n"
 	}
 	for _, offset := range knightDirs {
-		r, c := row+offset[0], col+offset[1]
-		if r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] == knight {
+		newRow, newCol := row+offset[0], col+offset[1]
+		if isOnBoard(newRow, newCol) && board[newRow][newCol] == knight {
 			return true
 		}
 	}
@@ -770,11 +774,11 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 	}
 	for _, dir := range rookDirs {
 		for i := 1; i < 8; i++ {
-			r, c := row+i*dir[0], col+i*dir[1]
-			if r < 0 || r >= 8 || c < 0 || c >= 8 {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !isOnBoard(newRow, newCol) {
 				break
 			}
-			piece := board[r][c]
+			piece := board[newRow][newCol]
 			if piece == "." {
 				continue
 			}
@@ -791,11 +795,11 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 	}
 	for _, dir := range bishopDirs {
 		for i := 1; i < 8; i++ {
-			r, c := row+i*dir[0], col+i*dir[1]
-			if r < 0 || r >= 8 || c < 0 || c >= 8 {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !isOnBoard(newRow, newCol) {
 				break
 			}
-			piece := board[r][c]
+			piece := board[newRow][newCol]
 			if piece == "." {
 				continue
 			}
@@ -811,8 +815,8 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 		king = "k"
 	}
 	for _, dir := range queenDirs {
-		r, c := row+dir[0], col+dir[1]
-		if r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] == king {
+		newRow, newCol := row+dir[0], col+dir[1]
+		if isOnBoard(newRow, newCol) && board[newRow][newCol] == king {
 			return true
 		}
 	}
@@ -823,6 +827,14 @@ func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 func IsInCheck(gs *GameState, isWhite bool) bool {
 	kingRow, kingCol := FindKing(gs.Board, isWhite)
 	return isSquareAttacked(gs.Board, kingRow, kingCol, !isWhite)
+}
+
+func isOnBoard(row, col int) bool {
+	if row >= 0 && row < 8 && col >= 0 && col < 8 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func FindKing(board [][]string, isWhite bool) (int, int) {
