@@ -18,6 +18,16 @@ import (
 
 //TODO: Pointers for big structs or things
 
+//TODO: isOnBoard(row, col int) bool
+//TODO: unit test
+//TODO: testa att det fungerar
+//TODO: gs as parameter instead of board+iswhite
+
+// For function is square attacked
+// change so that: return true actually increments var k with one and return k in the end.
+// check if != 0 istället för true
+// get legal moves från kung kan vara 2> så måste jag flytta kungen
+
 type Move struct {
 	FromRow, FromCol int
 	ToRow, ToCol     int
@@ -334,7 +344,7 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 		newCol := col + colOffset
 		if newCol >= 0 && newCol < 8 && newRow >= 0 && newRow < 8 {
 			target := board[newRow][newCol]
-			if target != "." && isEnemy(target, isWhite) { //???
+			if target != "." && isEnemy(target, isWhite) {
 				if (isWhite && newRow == 0) || (!isWhite && newRow == 7) {
 					for _, promo := range []string{"Q", "R", "B", "N"} {
 						moves = append(moves, Move{
@@ -422,8 +432,7 @@ func GenerateSlidingMoves(board [][]string, row, col int, isWhite bool, directio
 				moves = append(moves, Move{
 					FromRow: row, FromCol: col,
 					ToRow: newRow, ToCol: newCol,
-					Piece:   piece,
-					Capture: "",
+					Piece: piece,
 				})
 			} else {
 				if isEnemy(target, isWhite) {
@@ -494,9 +503,8 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 				moves = append(moves, Move{
 					FromRow: 7, FromCol: 4,
 					ToRow: 7, ToCol: 6,
-					Piece:   "K",
-					Capture: "",
-					Castle:  "K",
+					Piece:  "K",
+					Castle: "K",
 				})
 			}
 		}
@@ -508,9 +516,8 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 				moves = append(moves, Move{
 					FromRow: 7, FromCol: 4,
 					ToRow: 7, ToCol: 2,
-					Piece:   "K",
-					Capture: "",
-					Castle:  "Q",
+					Piece:  "K",
+					Castle: "Q",
 				})
 			}
 		}
@@ -523,9 +530,8 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 				moves = append(moves, Move{
 					FromRow: 0, FromCol: 4,
 					ToRow: 0, ToCol: 6,
-					Piece:   "k",
-					Capture: "",
-					Castle:  "k",
+					Piece:  "k",
+					Castle: "k",
 				})
 			}
 		}
@@ -537,9 +543,8 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 				moves = append(moves, Move{
 					FromRow: 0, FromCol: 4,
 					ToRow: 0, ToCol: 2,
-					Piece:   "k",
-					Capture: "",
-					Castle:  "q",
+					Piece:  "k",
+					Castle: "q",
 				})
 			}
 		}
