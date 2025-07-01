@@ -11,7 +11,7 @@ import (
 
 func main() {
     fmt.Println("Starting Chess Engine...")
-    gameState := board.ConvertFENtoGameState(board.GetStartingFEN())
+    gameState := board.FENtoGameState(board.GetStartingFEN())
     board.PrintBoard(gameState.Board)
     reader := bufio.NewReader(os.Stdin)
 

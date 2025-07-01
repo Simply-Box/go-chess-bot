@@ -7,26 +7,57 @@ import (
 
 // Patrik joins the battle!
 
-//TODO: change board into a hexadecimal and introduce bitboards
 //TODO: Simulate MakeMove with a SimulateMove function, only used for checks or something
-//TODO: Add checkmate, stalemate, 50 move rule, three same boardstate
+//TODO: Add checkmate, stalemate, 50 move rule, three same boardstate, halfmove
 //TODO: If not in check don't put yourself in check (self pinned pieces)
+//TODO: Remove Fullmove and therefore MoveCounters
 
-//TODO: Clean code: funcs are in better order, var and func names are understandable,
-//TODO: should everything be in board or migrated to other package
-//TODO: comments
-
+//TODO: change board into a hexadecimal and introduce bitboards
+//TODO: Clean code: var and func names are understandable,
 //TODO: Pointers for big structs or things
-
 //TODO: unit test
-//TODO: testa att det fungerar
 //TODO: gs as parameter instead of board+iswhite
+//TODO: Maybe import math instead of abs function?
+//TODO: Remove the parameter isWhite bool from all functions and use gs.isWhiteToMove instead
+//TODO: Human promotion creates enemy color queen
+//TODO: Make GameState methods instead of functions?
+//TODO: Add a Standard Algebraic Notation method to Move
 
-// For function is square attacked
-// change so that: return true actually increments var k with one and return k in the end.
-// check if != 0 istället för true
-// get legal moves från kung kan vara 2> så måste jag flytta kungen
+// For function is square attacked:
+// 	change so that: return true actually increments var k with one and return k in the end.
+// 	check if != 0 istället för true
+// 	get legal moves från kung kan vara 2> så måste jag flytta kungen
 
+// GameState is all relevant information about a chessboard
+type GameState struct {
+	Board       [][]string
+	WhiteToMove bool
+	Castling    CastlingRights
+	EnPassant   Coord
+	Counters    MoveCounters
+}
+
+// Castling rights
+type CastlingRights struct {
+	WhiteKingside  bool
+	WhiteQueenside bool
+	BlackKingside  bool
+	BlackQueenside bool
+}
+
+// Coordinate as two integers
+type Coord struct {
+	Row int
+	Col int
+}
+
+// Movecounters for halfmove and fullmove for FEN and draw
+type MoveCounters struct {
+	HalfMove int
+	FullMove int
+}
+
+// Containing all relevant information about a single chess move
 type Move struct {
 	FromRow, FromCol int
 	ToRow, ToCol     int
@@ -36,39 +67,17 @@ type Move struct {
 	Castle           string
 }
 
-type MoveCounters struct {
-	HalfMove int
-	FullMove int
-}
-
-type GameState struct {
-	Board       [][]string
-	WhiteToMove bool
-	Castling    CastlingRights
-	EnPassant   Coord
-	Counters    MoveCounters
-}
-
+// GameData is a FEN with a name and an evaluation
 type GameData struct {
 	FEN   string
 	Name  string
 	Score int
 }
 
-type Coord struct {
-	Row int
-	Col int
-}
+// Used instead of Coord as null
+var invalidCoord = Coord{Row: -1, Col: -1}
 
-type CastlingRights struct {
-	WhiteKingside  bool
-	WhiteQueenside bool
-	BlackKingside  bool
-	BlackQueenside bool
-}
-
-var InvalidCoord = Coord{Row: -1, Col: -1}
-
+// Directions used for pieces
 var (
 	knightDirs = [8][2]int{{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}}
 	bishopDirs = [][2]int{{-1, -1}, {-1, 1}, {1, -1}, {1, 1}}
@@ -76,141 +85,7 @@ var (
 	queenDirs  = append(bishopDirs, rookDirs...)
 )
 
-func GetStartingFEN() string {
-	gameData := []GameData{
-		{FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", Name: "Start Position", Score: 0},
-		{FEN: "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", Name: "King's Knight Opening", Score: 0},
-		{FEN: "rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPp/RNBQKB2 b Kkq - 0 10", Name: "Promotion", Score: 0},
-	}
-	fen := gameData[0].FEN
-	return fen
-}
-
-func ConvertFENtoGameState(fen string) GameState {
-	board := make([][]string, 8)
-	parts := strings.Split(fen, " ")
-	position := strings.Split(parts[0], "/")
-
-	for i, row := range position {
-		boardRow := make([]string, 0, 8)
-		for _, char := range row {
-			if char >= '1' && char <= '8' {
-				// add empty squares "."
-				numEmpty := int(char - '0')
-				for range numEmpty {
-					boardRow = append(boardRow, ".")
-				}
-			} else {
-				boardRow = append(boardRow, string(char))
-			}
-		}
-		board[i] = boardRow
-	}
-
-	// parts[1] is "w" otherwise "b" and sets the bool
-	isWhiteToMove := parts[1] == "w"
-
-	castling := CastlingRights{WhiteKingside: false, WhiteQueenside: false, BlackKingside: false, BlackQueenside: false}
-
-	if parts[2] != "-" {
-		for i := range parts[2] {
-			letter := parts[2][i]
-			switch letter {
-			case 'K':
-				castling.WhiteKingside = true
-			case 'Q':
-				castling.WhiteQueenside = true
-			case 'k':
-				castling.BlackKingside = true
-			case 'q':
-				castling.BlackQueenside = true
-			}
-		}
-	}
-
-	enPassantSquare := InvalidCoord
-	if parts[3] != "-" {
-		enPassantSquare = algebraicToCoords(parts[3])
-	}
-
-	counters := MoveCounters{0, 1}
-
-	gameState := GameState{Board: board, WhiteToMove: isWhiteToMove,
-		Castling: castling, EnPassant: enPassantSquare, Counters: counters}
-
-	return gameState
-}
-
-func PrintBoard(n [][]string) {
-	fmt.Println("  a b c d e f g h")
-	for row := range 8 {
-		fmt.Printf("%d ", 8-row)
-		for col := range 8 {
-			fmt.Printf("%s ", n[row][col])
-		}
-		fmt.Printf("%d\n", 8-row)
-	}
-	fmt.Println("  a b c d e f g h")
-}
-
-func algebraicToCoords(square string) Coord {
-	row := 8 - int(square[1]-'0') // '3',  8  -  3  = 5
-	col := int(square[0] - 'a')   // 'd', 'd' - 'a' = 3
-	return Coord{Row: row, Col: col}
-}
-
-func UpdateCastlingRights(cr *CastlingRights, move Move) {
-	piece := move.Piece
-	fromRow, fromCol := move.FromRow, move.FromCol
-	toRow, toCol := move.ToRow, move.ToCol
-
-	// King moves
-	if piece == "K" {
-		cr.WhiteKingside = false
-		cr.WhiteQueenside = false
-	}
-	if piece == "k" {
-		cr.BlackKingside = false
-		cr.BlackQueenside = false
-	}
-
-	// Rook moves
-	if piece == "R" && fromRow == 7 {
-		switch fromCol {
-			case 0:
-				cr.WhiteQueenside = false
-			case 7:
-				cr.WhiteKingside = false
-		}
-	}
-	if piece == "r" && fromRow == 0 {
-		switch fromCol {
-			case 0:
-				cr.BlackQueenside = false
-			case 7:
-				cr.BlackKingside = false
-		}
-	}
-
-	// Rook captures start squares
-	if move.Capture == "R" && toRow == 7 {
-		switch toCol {
-			case 0:
-				cr.WhiteQueenside = false
-			case 7:
-				cr.WhiteKingside = false
-		}
-	}
-	if move.Capture == "r" && toRow == 0 {
-		switch toCol {
-			case 0:
-				cr.BlackQueenside = false
-			case 7:
-				cr.BlackKingside = false
-		}
-	}
-}
-
+// Returns all legal moves for a GameState
 func GenerateAllMoves(gs *GameState) []Move {
 	board := gs.Board
 	isWhite := gs.WhiteToMove
@@ -253,8 +128,8 @@ func GenerateAllMoves(gs *GameState) []Move {
 			for col := range 8 {
 				piece := board[row][col]
 
-				if !isEnemy(piece, isWhite) && piece != "." {
-					allMoves = append(allMoves, GeneratePieceMoves(gs, row, col)...)
+				if !IsEnemy(piece, isWhite) && piece != "." {
+					allMoves = append(allMoves, GeneratePieceMoves(gs, row, col, piece)...)
 				}
 			}
 		}
@@ -262,33 +137,41 @@ func GenerateAllMoves(gs *GameState) []Move {
 	return allMoves
 }
 
-func GetCheckingPieces(gs *GameState) []Coord {
-	isWhite := gs.WhiteToMove
-	var checkingPieces []Coord
+// Returns moves from the piece
+func GeneratePieceMoves(gs *GameState, row, col int, piece string) []Move {
 	board := gs.Board
+	var moveList []Move
 
-	kingRow, kingCol := FindKing(board, isWhite)
-
-	// Loop over board to find attackers
-	for row := range 8 {
-		for col := range 8 {
-			piece := board[row][col]
-			if !isEnemy(piece, isWhite) {
-				continue
-			}
-			// Generate pseudo-legal moves for this piece only
-			moves := []Move{} // GeneratePieceMoves(gs, row, col) // not filtered by legality
-			for _, move := range moves {
-				if move.ToRow == kingRow && move.ToCol == kingCol {
-					checkingPieces = append(checkingPieces, Coord{Row: row, Col: col})
-				}
-			}
-		}
+	switch piece {
+	case "P":
+		moveList = GeneratePawnMoves(board, row, col, true, gs.EnPassant)
+	case "p":
+		moveList = GeneratePawnMoves(board, row, col, false, gs.EnPassant)
+	case "N":
+		moveList = GenerateKnightMoves(board, row, col, true)
+	case "n":
+		moveList = GenerateKnightMoves(board, row, col, false)
+	case "B":
+		moveList = GenerateBishopMoves(board, row, col, true)
+	case "b":
+		moveList = GenerateBishopMoves(board, row, col, false)
+	case "R":
+		moveList = GenerateRookMoves(board, row, col, true)
+	case "r":
+		moveList = GenerateRookMoves(board, row, col, false)
+	case "Q":
+		moveList = GenerateQueenMoves(board, row, col, true)
+	case "q":
+		moveList = GenerateQueenMoves(board, row, col, false)
+	case "K":
+		moveList = GenerateKingMoves(board, row, col, true, gs)
+	case "k":
+		moveList = GenerateKingMoves(board, row, col, false, gs)
 	}
-
-	return checkingPieces
+	return moveList
 }
 
+// Returns moves from the pawn
 func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSquare Coord) []Move {
 	var moves []Move
 
@@ -345,9 +228,9 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 	// Captures
 	for _, colOffset := range []int{-1, 1} {
 		newCol := col + colOffset
-		if isOnBoard(newRow, newCol) {
+		if IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
-			if target != "." && isEnemy(target, isWhite) {
+			if target != "." && IsEnemy(target, isWhite) {
 				if (isWhite && newRow == 0) || (!isWhite && newRow == 7) {
 					for _, promo := range []string{"Q", "R", "B", "N"} {
 						moves = append(moves, Move{
@@ -371,11 +254,11 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 	}
 
 	// EnPassant
-	if enPassantSquare != InvalidCoord {
+	if enPassantSquare != invalidCoord {
 		epRow := enPassantSquare.Row
 		epCol := enPassantSquare.Col
 
-		if isWhite && row == 3 && epRow == 2 && abs(col-epCol) == 1 {
+		if isWhite && row == 3 && epRow == 2 && Abs(col-epCol) == 1 {
 			moves = append(moves, Move{
 				FromRow: row, FromCol: col,
 				ToRow: epRow, ToCol: epCol,
@@ -384,7 +267,7 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 			})
 		}
 
-		if !isWhite && row == 4 && epRow == 5 && abs(col-epCol) == 1 {
+		if !isWhite && row == 4 && epRow == 5 && Abs(col-epCol) == 1 {
 			moves = append(moves, Move{
 				FromRow: row, FromCol: col,
 				ToRow: epRow, ToCol: epCol,
@@ -397,6 +280,7 @@ func GeneratePawnMoves(board [][]string, row, col int, isWhite bool, enPassantSq
 	return moves
 }
 
+// Returns moves from the knight
 func GenerateKnightMoves(board [][]string, row, col int, isWhite bool) []Move {
 	var moves []Move
 	piece := board[row][col]
@@ -405,9 +289,9 @@ func GenerateKnightMoves(board [][]string, row, col int, isWhite bool) []Move {
 		newRow := row + offset[0]
 		newCol := col + offset[1]
 
-		if isOnBoard(newRow, newCol) {
+		if IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
-			if target == "." || isEnemy(target, isWhite) {
+			if target == "." || IsEnemy(target, isWhite) {
 				move := Move{
 					FromRow: row, FromCol: col,
 					ToRow: newRow, ToCol: newCol,
@@ -423,13 +307,14 @@ func GenerateKnightMoves(board [][]string, row, col int, isWhite bool) []Move {
 	return moves
 }
 
+// Returns moves from sliding pieces such as bishop, rook and queen
 func GenerateSlidingMoves(board [][]string, row, col int, isWhite bool, directions [][2]int) []Move {
 	var moves []Move
 	piece := board[row][col]
 
 	for _, dir := range directions {
 		newRow, newCol := row+dir[0], col+dir[1]
-		for isOnBoard(newRow, newCol) {
+		for IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." {
 				moves = append(moves, Move{
@@ -438,7 +323,7 @@ func GenerateSlidingMoves(board [][]string, row, col int, isWhite bool, directio
 					Piece: piece,
 				})
 			} else {
-				if isEnemy(target, isWhite) {
+				if IsEnemy(target, isWhite) {
 					moves = append(moves, Move{
 						FromRow: row, FromCol: col,
 						ToRow: newRow, ToCol: newCol,
@@ -455,18 +340,22 @@ func GenerateSlidingMoves(board [][]string, row, col int, isWhite bool, directio
 	return moves
 }
 
+// Returns moves from the bishop
 func GenerateBishopMoves(board [][]string, row, col int, isWhite bool) []Move {
 	return GenerateSlidingMoves(board, row, col, isWhite, bishopDirs)
 }
 
+// Returns moves from the rook
 func GenerateRookMoves(board [][]string, row, col int, isWhite bool) []Move {
 	return GenerateSlidingMoves(board, row, col, isWhite, rookDirs)
 }
 
+// Returns moves from the queen
 func GenerateQueenMoves(board [][]string, row, col int, isWhite bool) []Move {
 	return GenerateSlidingMoves(board, row, col, isWhite, queenDirs)
 }
 
+// Returns moves from the king
 func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameState) []Move {
 	var moves []Move
 
@@ -475,14 +364,14 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	for _, dir := range queenDirs {
 		newRow, newCol := row+dir[0], col+dir[1]
 
-		if isOnBoard(newRow, newCol) {
+		if IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
-			if target == "." || isEnemy(target, isWhite) {
+			if target == "." || IsEnemy(target, isWhite) {
 				capture := ""
 				if target != "." {
 					capture = target
 				}
-				if !isSquareAttacked(board, newRow, newCol, !isWhite) {
+				if !IsSquareAttacked(board, newRow, newCol, !isWhite) {
 					moves = append(moves, Move{
 						FromRow: row, FromCol: col,
 						ToRow: newRow, ToCol: newCol,
@@ -500,9 +389,9 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	if isWhite {
 		if cr.WhiteKingside {
 			if board[7][5] == "." && board[7][6] == "." &&
-				!isSquareAttacked(board, 7, 4, false) &&
-				!isSquareAttacked(board, 7, 5, false) &&
-				!isSquareAttacked(board, 7, 6, false) {
+				!IsSquareAttacked(board, 7, 4, false) &&
+				!IsSquareAttacked(board, 7, 5, false) &&
+				!IsSquareAttacked(board, 7, 6, false) {
 				moves = append(moves, Move{
 					FromRow: 7, FromCol: 4,
 					ToRow: 7, ToCol: 6,
@@ -513,9 +402,9 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 		}
 		if cr.WhiteQueenside {
 			if board[7][3] == "." && board[7][2] == "." && board[7][1] == "." &&
-				!isSquareAttacked(board, 7, 4, false) &&
-				!isSquareAttacked(board, 7, 3, false) &&
-				!isSquareAttacked(board, 7, 2, false) {
+				!IsSquareAttacked(board, 7, 4, false) &&
+				!IsSquareAttacked(board, 7, 3, false) &&
+				!IsSquareAttacked(board, 7, 2, false) {
 				moves = append(moves, Move{
 					FromRow: 7, FromCol: 4,
 					ToRow: 7, ToCol: 2,
@@ -527,9 +416,9 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	} else {
 		if cr.BlackKingside {
 			if board[0][5] == "." && board[0][6] == "." &&
-				!isSquareAttacked(board, 0, 4, true) &&
-				!isSquareAttacked(board, 0, 5, true) &&
-				!isSquareAttacked(board, 0, 6, true) {
+				!IsSquareAttacked(board, 0, 4, true) &&
+				!IsSquareAttacked(board, 0, 5, true) &&
+				!IsSquareAttacked(board, 0, 6, true) {
 				moves = append(moves, Move{
 					FromRow: 0, FromCol: 4,
 					ToRow: 0, ToCol: 6,
@@ -540,9 +429,9 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 		}
 		if cr.BlackQueenside {
 			if board[0][3] == "." && board[0][2] == "." && board[0][1] == "." &&
-				!isSquareAttacked(board, 0, 4, true) &&
-				!isSquareAttacked(board, 0, 3, true) &&
-				!isSquareAttacked(board, 0, 2, true) {
+				!IsSquareAttacked(board, 0, 4, true) &&
+				!IsSquareAttacked(board, 0, 3, true) &&
+				!IsSquareAttacked(board, 0, 2, true) {
 				moves = append(moves, Move{
 					FromRow: 0, FromCol: 4,
 					ToRow: 0, ToCol: 2,
@@ -556,41 +445,54 @@ func GenerateKingMoves(board [][]string, row, col int, isWhite bool, gs *GameSta
 	return moves
 }
 
-func GeneratePieceMoves(gs *GameState, row, col int) []Move {
+// Not done: Returns the number of pieces checking the king
+func GetCheckingPieces(gs *GameState) []Coord {
+	isWhite := gs.WhiteToMove
+	var checkingPieces []Coord
 	board := gs.Board
-	piece := board[row][col]
-	var moveList []Move
 
-	switch piece {
-	case "P":
-		moveList = GeneratePawnMoves(board, row, col, true, gs.EnPassant)
-	case "p":
-		moveList = GeneratePawnMoves(board, row, col, false, gs.EnPassant)
-	case "N":
-		moveList = GenerateKnightMoves(board, row, col, true)
-	case "n":
-		moveList = GenerateKnightMoves(board, row, col, false)
-	case "B":
-		moveList = GenerateBishopMoves(board, row, col, true)
-	case "b":
-		moveList = GenerateBishopMoves(board, row, col, false)
-	case "R":
-		moveList = GenerateRookMoves(board, row, col, true)
-	case "r":
-		moveList = GenerateRookMoves(board, row, col, false)
-	case "Q":
-		moveList = GenerateQueenMoves(board, row, col, true)
-	case "q":
-		moveList = GenerateQueenMoves(board, row, col, false)
-	case "K":
-		moveList = GenerateKingMoves(board, row, col, true, gs)
-	case "k":
-		moveList = GenerateKingMoves(board, row, col, false, gs)
+	kingRow, kingCol := GetKing(board, isWhite)
+
+	// Loop over board to find attackers
+	for row := range 8 {
+		for col := range 8 {
+			piece := board[row][col]
+			if !IsEnemy(piece, isWhite) {
+				continue
+			}
+			// Generate pseudo-legal moves for this piece only
+			moves := []Move{}
+			for _, move := range moves {
+				if move.ToRow == kingRow && move.ToCol == kingCol {
+					checkingPieces = append(checkingPieces, Coord{Row: row, Col: col})
+				}
+			}
+		}
 	}
-	return moveList
+
+	return checkingPieces
 }
 
-func isEnemy(piece string, isWhite bool) bool {
+// Returns the row and col for your king
+func GetKing(board [][]string, isWhite bool) (int, int) {
+
+	king := "K"
+	if !isWhite {
+		king = "k"
+	}
+
+	for row := range 8 {
+		for col := range 8 {
+			if board[row][col] == king {
+				return row, col
+			}
+		}
+	}
+	return 0, 0
+}
+
+// Returns true if it is an enemy piece
+func IsEnemy(piece string, isWhite bool) bool {
 	if piece == "." {
 		return false
 	}
@@ -600,76 +502,105 @@ func isEnemy(piece string, isWhite bool) bool {
 	return piece >= "A" && piece <= "Z"
 }
 
-func ParseMove(input string, gs GameState) (Move, error) {
-	isWhite := gs.WhiteToMove
-
-	if len(input) != 4 {
-		return Move{}, fmt.Errorf("invalid move format, expected 4 chars like 'e2e4'")
-	}
-
-	from := input[:2]
-	to := input[2:]
-
-	if !validSquare(from) {
-		return Move{}, fmt.Errorf("invalid from square: %s", from)
-	}
-	if !validSquare(to) {
-		return Move{}, fmt.Errorf("invalid to square: %s", to)
-	}
-
-	fromCoord := algebraicToCoords(from)
-	toCoord := algebraicToCoords(to)
-
-	piece := gs.Board[fromCoord.Row][fromCoord.Col]
-	if piece == "." || isEnemy(piece, isWhite) {
-		return Move{}, fmt.Errorf("not your piece at %s", from)
-	}
-
-	capture := gs.Board[toCoord.Row][toCoord.Col]
-
-	move := Move{
-		FromRow: fromCoord.Row,
-		FromCol: fromCoord.Col,
-		ToRow:   toCoord.Row,
-		ToCol:   toCoord.Col,
-		Piece:   piece,
-		Capture: capture,
-	}
-
-	return move, nil
+// Returns true if king is in check
+func IsInCheck(gs *GameState, isWhite bool) bool {
+	kingRow, kingCol := GetKing(gs.Board, isWhite)
+	return IsSquareAttacked(gs.Board, kingRow, kingCol, !isWhite)
 }
 
-func validSquare(s string) bool {
-	file := s[0]
-	rank := s[1]
-	return file >= 'a' && file <= 'h' && rank >= '1' && rank <= '8'
-}
+// Returns true if the square is threatened
+func IsSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
 
-func MakeMove(gs *GameState, allMoves *[]Move, input string) error {
-
-	// Input string into a Move
-	move, err := ParseMove(input, *gs)
-	if err != nil {
-		return fmt.Errorf("invalid move format: %v", err)
+	pawnDir := 1
+	pawn := "p"
+	if isWhite {
+		pawnDir = -1
+		pawn = "P"
+	}
+	for _, negPos := range []int{-1, 1} {
+		newRow, newCol := row+pawnDir, col+negPos
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == pawn {
+			return true
+		}
 	}
 
-	var isLegal bool
-	for _, legalMove := range *allMoves {
-		if legalMove.Equal(move) {
-			isLegal = true
-			move = legalMove
+	knight := "N"
+	if !isWhite {
+		knight = "n"
+	}
+	for _, offset := range knightDirs {
+		newRow, newCol := row+offset[0], col+offset[1]
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == knight {
+			return true
+		}
+	}
+
+	rook, queen := "R", "Q"
+	if !isWhite {
+		rook, queen = "r", "q"
+	}
+	for _, dir := range rookDirs {
+		for i := 1; i < 8; i++ {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !IsOnBoard(newRow, newCol) {
+				break
+			}
+			piece := board[newRow][newCol]
+			if piece == "." {
+				continue
+			}
+			if piece == rook || piece == queen {
+				return true
+			}
 			break
 		}
 	}
-	if !isLegal {
-		return fmt.Errorf("invalid move: %s", input)
+
+	bishop := "B"
+	if !isWhite {
+		bishop = "b"
+	}
+	for _, dir := range bishopDirs {
+		for i := 1; i < 8; i++ {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !IsOnBoard(newRow, newCol) {
+				break
+			}
+			piece := board[newRow][newCol]
+			if piece == "." {
+				continue
+			}
+			if piece == bishop || piece == queen {
+				return true
+			}
+			break
+		}
 	}
 
-	ApplyMove(gs, move)
+	king := "K"
+	if !isWhite {
+		king = "k"
+	}
+	for _, dir := range queenDirs {
+		newRow, newCol := row+dir[0], col+dir[1]
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == king {
+			return true
+		}
+	}
 
-	return nil
+	return false
 }
 
+// Returns true if row and col values are within 0 to 8
+func IsOnBoard(row, col int) bool {
+	if row >= 0 && row < 8 && col >= 0 && col < 8 {
+		return true
+	} else {
+		return false
+	}
+}
+
+// Updates the GameState according to the input move
 func ApplyMove(gs *GameState, move Move) {
 	piece := move.Piece
 
@@ -716,8 +647,6 @@ func ApplyMove(gs *GameState, move Move) {
 	// TODO: if no castling; skip
 	UpdateCastlingRights(&gs.Castling, move)
 
-	gs.WhiteToMove = !gs.WhiteToMove
-
 	// Halfmove clock
 	if piece == "P" || move.Capture != "." {
 		gs.Counters.HalfMove = 0
@@ -729,123 +658,229 @@ func ApplyMove(gs *GameState, move Move) {
 	if !gs.WhiteToMove {
 		gs.Counters.FullMove++
 	}
+
+	gs.WhiteToMove = !gs.WhiteToMove
 }
 
-func isSquareAttacked(board [][]string, row, col int, isWhite bool) bool {
+// Updates castling rights
+func UpdateCastlingRights(cr *CastlingRights, move Move) {
+	piece := move.Piece
+	fromRow, fromCol := move.FromRow, move.FromCol
+	toRow, toCol := move.ToRow, move.ToCol
 
-	pawnDir := -1
-	pawn := "P"
-	if isWhite {
-		pawnDir = -1
-		pawn = "P"
-	} else {
-		pawnDir = 1
-		pawn = "p"
+	// King moves
+	if piece == "K" {
+		cr.WhiteKingside = false
+		cr.WhiteQueenside = false
 	}
-	for _, negPos := range []int{-1, 1} {
-		newRow, newCol := row+pawnDir, col+negPos
-		if isOnBoard(newRow, newCol) && board[newRow][newCol] == pawn {
-			return true
+	if piece == "k" {
+		cr.BlackKingside = false
+		cr.BlackQueenside = false
+	}
+
+	// Rook moves
+	if piece == "R" && fromRow == 7 {
+		switch fromCol {
+		case 0:
+			cr.WhiteQueenside = false
+		case 7:
+			cr.WhiteKingside = false
+		}
+	}
+	if piece == "r" && fromRow == 0 {
+		switch fromCol {
+		case 0:
+			cr.BlackQueenside = false
+		case 7:
+			cr.BlackKingside = false
 		}
 	}
 
-	knight := "N"
-	if !isWhite {
-		knight = "n"
-	}
-	for _, offset := range knightDirs {
-		newRow, newCol := row+offset[0], col+offset[1]
-		if isOnBoard(newRow, newCol) && board[newRow][newCol] == knight {
-			return true
+	// Rook captures start squares
+	if move.Capture == "R" && toRow == 7 {
+		switch toCol {
+		case 0:
+			cr.WhiteQueenside = false
+		case 7:
+			cr.WhiteKingside = false
 		}
 	}
-
-	rook, queen := "R", "Q"
-	if !isWhite {
-		rook, queen = "r", "q"
+	if move.Capture == "r" && toRow == 0 {
+		switch toCol {
+		case 0:
+			cr.BlackQueenside = false
+		case 7:
+			cr.BlackKingside = false
+		}
 	}
-	for _, dir := range rookDirs {
-		for i := 1; i < 8; i++ {
-			newRow, newCol := row+i*dir[0], col+i*dir[1]
-			if !isOnBoard(newRow, newCol) {
-				break
-			}
-			piece := board[newRow][newCol]
-			if piece == "." {
-				continue
-			}
-			if piece == rook || piece == queen {
-				return true
-			}
+}
+
+func MakeMove(gs *GameState, allMoves *[]Move, input string) error {
+
+	// Input string into a Move struct
+	move, err := ParseMove(input, *gs)
+	if err != nil {
+		return fmt.Errorf("invalid move format: %v", err)
+	}
+
+	var isLegal bool
+	for _, legalMove := range *allMoves {
+		if legalMove.Equal(move) {
+			isLegal = true
+			move = legalMove
 			break
 		}
 	}
-
-	bishop := "B"
-	if !isWhite {
-		bishop = "b"
+	if !isLegal {
+		return fmt.Errorf("invalid move: %s", input)
 	}
-	for _, dir := range bishopDirs {
-		for i := 1; i < 8; i++ {
-			newRow, newCol := row+i*dir[0], col+i*dir[1]
-			if !isOnBoard(newRow, newCol) {
-				break
+
+	ApplyMove(gs, move)
+
+	return nil
+}
+
+// Returns the input move and an error if invalid move
+func ParseMove(algebraicMove string, gs GameState) (Move, error) {
+	isWhite := gs.WhiteToMove
+
+	if len(algebraicMove) != 4 {
+		return Move{}, fmt.Errorf("invalid move format, expected 4 chars like 'e2e4'")
+	}
+
+	from := algebraicMove[:2]
+	to := algebraicMove[2:]
+
+	if !ValidSquare(from) {
+		return Move{}, fmt.Errorf("invalid from square: %s", from)
+	}
+	if !ValidSquare(to) {
+		return Move{}, fmt.Errorf("invalid to square: %s", to)
+	}
+
+	fromCoord := AlgebraicToCoords(from)
+	toCoord := AlgebraicToCoords(to)
+
+	piece := gs.Board[fromCoord.Row][fromCoord.Col]
+	if piece == "." || IsEnemy(piece, isWhite) {
+		return Move{}, fmt.Errorf("not your piece at %s", from)
+	}
+
+	capture := gs.Board[toCoord.Row][toCoord.Col]
+
+	move := Move{
+		FromRow: fromCoord.Row,
+		FromCol: fromCoord.Col,
+		ToRow:   toCoord.Row,
+		ToCol:   toCoord.Col,
+		Piece:   piece,
+		Capture: capture,
+	}
+
+	return move, nil
+}
+
+// Returns true if the algebraic square is inside the board
+func ValidSquare(s string) bool {
+	file := s[0]
+	rank := s[1]
+	return file >= 'a' && file <= 'h' && rank >= '1' && rank <= '8'
+}
+
+// Returns a FEN string
+func GetStartingFEN() string {
+	gameData := []GameData{
+		{FEN: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", Name: "Start Position", Score: 0},
+		{FEN: "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", Name: "King's Knight Opening", Score: 0},
+		{FEN: "rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPp/RNBQKB2 b Kkq - 0 10", Name: "Promotion", Score: 0},
+	}
+	fen := gameData[0].FEN
+	return fen
+}
+
+// Converts a FEN string into a GameState struct
+func FENtoGameState(fen string) GameState {
+	board := make([][]string, 8)
+	parts := strings.Split(fen, " ")
+	position := strings.Split(parts[0], "/")
+
+	for i, row := range position {
+		boardRow := make([]string, 0, 8)
+		for _, char := range row {
+			if char >= '1' && char <= '8' {
+				// add empty squares "."
+				numEmpty := int(char - '0')
+				for range numEmpty {
+					boardRow = append(boardRow, ".")
+				}
+			} else {
+				boardRow = append(boardRow, string(char))
 			}
-			piece := board[newRow][newCol]
-			if piece == "." {
-				continue
+		}
+		board[i] = boardRow
+	}
+
+	// parts[1] is "w" otherwise "b" and sets the bool
+	isWhiteToMove := parts[1] == "w"
+
+	castling := CastlingRights{WhiteKingside: false, WhiteQueenside: false, BlackKingside: false, BlackQueenside: false}
+
+	if parts[2] != "-" {
+		for i := range parts[2] {
+			letter := parts[2][i]
+			switch letter {
+			case 'K':
+				castling.WhiteKingside = true
+			case 'Q':
+				castling.WhiteQueenside = true
+			case 'k':
+				castling.BlackKingside = true
+			case 'q':
+				castling.BlackQueenside = true
 			}
-			if piece == bishop || piece == queen {
-				return true
-			}
-			break
 		}
 	}
 
-	king := "K"
-	if !isWhite {
-		king = "k"
-	}
-	for _, dir := range queenDirs {
-		newRow, newCol := row+dir[0], col+dir[1]
-		if isOnBoard(newRow, newCol) && board[newRow][newCol] == king {
-			return true
-		}
+	enPassantSquare := invalidCoord
+	if parts[3] != "-" {
+		enPassantSquare = AlgebraicToCoords(parts[3])
 	}
 
-	return false
+	counters := MoveCounters{0, 1}
+
+	gameState := GameState{Board: board, WhiteToMove: isWhiteToMove,
+		Castling: castling, EnPassant: enPassantSquare, Counters: counters}
+
+	return gameState
 }
 
-func IsInCheck(gs *GameState, isWhite bool) bool {
-	kingRow, kingCol := FindKing(gs.Board, isWhite)
-	return isSquareAttacked(gs.Board, kingRow, kingCol, !isWhite)
+// Converts 'e4' into a Coord struct
+func AlgebraicToCoords(algebraic string) Coord {
+	row := 8 - int(algebraic[1]-'0') // '3',  8 - 3 = 5
+	col := int(algebraic[0] - 'a')   // 'd', 'd' - 'a'= 3
+	return Coord{Row: row, Col: col}
 }
 
-func isOnBoard(row, col int) bool {
-	if row >= 0 && row < 8 && col >= 0 && col < 8 {
-		return true
-	} else {
-		return false
-	}
-}
-
-func FindKing(board [][]string, isWhite bool) (int, int) {
-
-	king := "K"
-	if !isWhite {
-		king = "k"
-	}
-
+// Prints the board to terminal
+func PrintBoard(n [][]string) {
 	for row := range 8 {
 		for col := range 8 {
-			if board[row][col] == king {
-				return row, col
-			}
+			fmt.Printf("%s ", n[row][col])
 		}
+		fmt.Printf("%d\n", 8-row)
 	}
-	return 0, 0
+	fmt.Println("a b c d e f g h")
 }
 
+// Returns the absolute value
+func Abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// Returns true if two Move structs are the same
 func (m Move) Equal(other Move) bool {
 	return m.FromRow == other.FromRow &&
 		m.FromCol == other.FromCol &&
@@ -853,6 +888,7 @@ func (m Move) Equal(other Move) bool {
 		m.ToCol == other.ToCol
 }
 
+// Makes Move struct able to be printed
 func (m Move) String() string {
 	toSquare := func(row, col int) string {
 		file := string(rune('a' + col))
@@ -868,11 +904,4 @@ func (m Move) String() string {
 	}
 
 	return fmt.Sprintf("%s %s -> %s", m.Piece, from, to)
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }
