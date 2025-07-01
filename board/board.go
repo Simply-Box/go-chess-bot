@@ -176,33 +176,37 @@ func UpdateCastlingRights(cr *CastlingRights, move Move) {
 
 	// Rook moves
 	if piece == "R" && fromRow == 7 {
-		if fromCol == 0 {
-			cr.WhiteQueenside = false
-		} else if fromCol == 7 {
-			cr.WhiteKingside = false
+		switch fromCol {
+			case 0:
+				cr.WhiteQueenside = false
+			case 7:
+				cr.WhiteKingside = false
 		}
 	}
 	if piece == "r" && fromRow == 0 {
-		if fromCol == 0 {
-			cr.BlackQueenside = false
-		} else if fromCol == 7 {
-			cr.BlackKingside = false
+		switch fromCol {
+			case 0:
+				cr.BlackQueenside = false
+			case 7:
+				cr.BlackKingside = false
 		}
 	}
 
 	// Rook captures start squares
 	if move.Capture == "R" && toRow == 7 {
-		if toCol == 0 {
-			cr.WhiteQueenside = false
-		} else if toCol == 7 {
-			cr.WhiteKingside = false
+		switch toCol {
+			case 0:
+				cr.WhiteQueenside = false
+			case 7:
+				cr.WhiteKingside = false
 		}
 	}
 	if move.Capture == "r" && toRow == 0 {
-		if toCol == 0 {
-			cr.BlackQueenside = false
-		} else if toCol == 7 {
-			cr.BlackKingside = false
+		switch toCol {
+			case 0:
+				cr.BlackQueenside = false
+			case 7:
+				cr.BlackKingside = false
 		}
 	}
 }
