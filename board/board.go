@@ -7,7 +7,11 @@ import (
 
 // Patrik joins the battle!
 
-//TODO: Add checkmate, stalemate, 50 move rule, three same boardstate, halfmove
+//TODO: Add checkmate, stalemate, 50  move rule, three same boardstate, halfmove
+
+//TODO: func GetPinnedPieces()
+//TODO: Add logic for GenerateAllMoves that doesn't include simulate all	
+
 //TODO: If not in check don't put yourself in check (self pinned pieces)
 //TODO: Unit test
 //TODO: Change board into a hexadecimal and introduce bitboards
@@ -30,6 +34,7 @@ type GameState struct {
 	Castling    CastlingRights
 	EnPassant   Coord
 	Counters    MoveCounters
+	Results 	GameResult
 }
 
 // Castling rights
@@ -51,6 +56,15 @@ type MoveCounters struct {
 	HalfMove int
 	FullMove int
 }
+
+// GameResult determines if current game is ongoing, checkmate or a draw
+type GameResult int
+
+const (
+    Ongoing GameResult = iota
+    Checkmate
+    Draw
+)
 
 // Containing all relevant information about a single chess move
 type Move struct {
