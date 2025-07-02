@@ -573,6 +573,77 @@ func IsInCheck(gs *GameState) bool {
 	return IsSquareAttacked(gs, kingRow, kingCol)
 }
 
+func SquareAttackedAmount(gs *GameState, row, col int) int {
+	attackers := 0
+	attackerIsWhite := !gs.WhiteToMove
+	board := gs.Board
+
+	enemyPawnDir := 1
+	pawn, knight, bishop, rook, queen, king := "p", "n", "b", "r", "q", "k"
+
+	if attackerIsWhite {
+		enemyPawnDir = -1
+		pawn, knight, bishop, rook, queen, king = "P", "N", "B", "R", "Q", "K"
+	}
+
+	for _, negPos := range []int{-1, 1} {
+		newRow, newCol := row+enemyPawnDir, col+negPos
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == pawn {
+			attackers = attackers + 1
+		}
+	}
+
+	for _, offset := range knightDirs {
+		newRow, newCol := row+offset[0], col+offset[1]
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == knight {
+			attackers = attackers + 1
+		}
+	}
+
+	for _, dir := range rookDirs {
+		for i := 1; i < 8; i++ {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !IsOnBoard(newRow, newCol) {
+				break
+			}
+			piece := board[newRow][newCol]
+			if piece == "." {
+				continue
+			}
+			if piece == rook || piece == queen {
+				attackers = attackers + 1
+			}
+			break
+		}
+	}
+
+	for _, dir := range bishopDirs {
+		for i := 1; i < 8; i++ {
+			newRow, newCol := row+i*dir[0], col+i*dir[1]
+			if !IsOnBoard(newRow, newCol) {
+				break
+			}
+			piece := board[newRow][newCol]
+			if piece == "." {
+				continue
+			}
+			if piece == bishop || piece == queen {
+				attackers = attackers + 1
+			}
+			break
+		}
+	}
+
+	for _, dir := range queenDirs {
+		newRow, newCol := row+dir[0], col+dir[1]
+		if IsOnBoard(newRow, newCol) && board[newRow][newCol] == king {
+			attackers = attackers + 1
+		}
+	}
+
+	return attackers
+}
+
 // Returns true if the square is threatened
 func IsSquareAttacked(gs *GameState, row, col int) bool {
 	attackerIsWhite := !gs.WhiteToMove
