@@ -427,7 +427,7 @@ func GenerateKingMoves(gs *GameState, row, col int) []Move {
 	for _, dir := range queenDirs {
 		newRow, newCol := row+dir[0], col+dir[1]
 
-		if IsOnBoard(newRow, newCol) && !IsInCheck(gs) {
+		if IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." || IsEnemy(target, isWhite) {
 				capture := ""
