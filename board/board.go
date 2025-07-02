@@ -86,7 +86,43 @@ func GenerateAllMoves(gs *GameState) []Move {
 	isWhite := gs.WhiteToMove
 	allMoves := []Move{}
 
-	if false { // IsInCheck(gs, isWhite) {
+	// Fancier implementation, maybe faster (unfinished)
+	//
+	// kRow, kCol := GetKing(gs)
+	// if SquareAttackedAmount(gs, kRow, kCol) > 0 {
+
+	// 	if SquareAttackedAmount(gs, kRow, kCol) > 2 {
+	// 		allMoves = append(allMoves, GenerateKingMoves(gs, kRow, kCol)...)
+	// 		return allMoves
+	// 	}
+
+	// 	// Shadow knight on king position
+	// 	for _, move := range GenerateKnightMoves(gs, kRow, kCol) {
+	// 		if strings.Contains("Nn", move.Capture) {
+
+	// 			if !IsSquareAttacked(gs, move.ToRow, move.ToCol) {
+	// 				allMoves = append(allMoves, GenerateKingMoves(gs, kRow, kCol)...)
+	// 				return allMoves
+	// 			}
+
+	// 		}
+	// 	}
+
+	// 	// Shadow Bishop on king position
+	// 	for _, move := range GenerateBishopMoves(gs, kRow, kCol) {
+	// 		if strings.Contains("Nn", move.Capture) {
+
+	// 		}
+	// 	}
+
+	// 	// Shadow Rook on king position
+	// 	for _, move := range GenerateBishopMoves(gs, kRow, kCol) {
+	// 		if strings.Contains("Nn", move.Capture) {
+
+	// 		}
+	// 	}
+
+	// 	// IsInCheck(gs, isWhite) {
 
 		// calc all danger lines
 
@@ -117,14 +153,38 @@ func GenerateAllMoves(gs *GameState) []Move {
 		//	return GenerateKingMoves(board, row, col, isWhite, gs)
 		//}
 
-	} else {
-
+	kRow, kCol := GetKing(gs)
 		for row := range 8 {
 			for col := range 8 {
 				piece := board[row][col]
+			if IsEnemy(piece, isWhite) || piece == "." {
+				continue
+			}
+			for _, move := range GeneratePieceMoves(gs, row, col, piece) {
+				if strings.Contains("Kk", piece) {
+					kRow, kCol = move.ToRow, move.ToCol
+				}
 
-				if !IsEnemy(piece, isWhite) && piece != "." {
-					allMoves = append(allMoves, GeneratePieceMoves(gs, row, col, piece)...)
+				// Manual Deep copy of GameState. Bad.
+				newGs := *gs
+				ptrNewGs := &newGs
+
+				slice := make([][]string, 8)
+				ptrNewGs.Board = slice
+
+				for i := range 8 {
+					slice[i] = make([]string, 8)
+					for j := range 8 {
+						slice[i][j] = gs.Board[i][j]
+					}
+				}
+
+				// If this move is made, Am I in check? Fixes both Checks and pinned pieces.
+				ApplyMove(ptrNewGs, move)
+				ptrNewGs.WhiteToMove = !newGs.WhiteToMove
+
+				if SquareAttackedAmount(ptrNewGs, kRow, kCol) == 0 {
+					allMoves = append(allMoves, move)
 				}
 			}
 		}
