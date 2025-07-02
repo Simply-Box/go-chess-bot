@@ -154,12 +154,14 @@ func GenerateAllMoves(gs *GameState) []Move {
 		//}
 
 	kRow, kCol := GetKing(gs)
-		for row := range 8 {
-			for col := range 8 {
-				piece := board[row][col]
+	for row := range 8 {
+		for col := range 8 {
+			piece := board[row][col]
+
 			if IsEnemy(piece, isWhite) || piece == "." {
 				continue
 			}
+
 			for _, move := range GeneratePieceMoves(gs, row, col, piece) {
 				if strings.Contains("Kk", piece) {
 					kRow, kCol = move.ToRow, move.ToCol
@@ -427,7 +429,7 @@ func GenerateKingMoves(gs *GameState, row, col int) []Move {
 	for _, dir := range queenDirs {
 		newRow, newCol := row+dir[0], col+dir[1]
 
-		if IsOnBoard(newRow, newCol) && !IsInCheck(gs) {
+		if IsOnBoard(newRow, newCol) {
 			target := board[newRow][newCol]
 			if target == "." || IsEnemy(target, isWhite) {
 				capture := ""
