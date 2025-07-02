@@ -205,6 +205,16 @@ func GenerateAllMoves(gs *GameState) []Move {
 			}
 		}
 	}
+
+	// Should this be a separat function and not be inside this function?
+	if len(allMoves) == 0  {
+		if IsInCheck(gs) {
+			gs.Results = Checkmate
+		} else {
+			gs.Results = Draw
+		}
+	}
+
 	return allMoves
 }
 
@@ -792,6 +802,10 @@ func ApplyMove(gs *GameState, move Move) {
 		gs.Counters.HalfMove++
 	}
 
+	if gs.Counters.HalfMove >= 50 {
+		gs.Results = Draw
+	}
+
 	// Fullmove number
 	if !gs.WhiteToMove {
 		gs.Counters.FullMove++
@@ -1010,6 +1024,20 @@ func PrintBoard(n [][]string) {
 	fmt.Println("a b c d e f g h")
 }
 
+// Prints the result of the current GameState
+func PrintResult(Result GameResult, isWhite bool) {
+	switch Result {
+		case Checkmate:
+			if isWhite {
+				fmt.Println("Black wins")
+			} else {
+				fmt.Println("White wins")
+			}
+		case Draw:
+			fmt.Println("Draw")
+	}
+}
+
 // Returns the absolute value
 func Abs(x int) int {
 	if x < 0 {
@@ -1042,4 +1070,31 @@ func (m Move) String() string {
 	}
 
 	return fmt.Sprintf("%s %s -> %s", m.Piece, from, to)
+}
+
+// Makes GameResult struct able to be printed
+func (result GameResult) String() string {
+    switch result {
+    case Ongoing:
+        return "Ongoing"
+    case Checkmate:
+        return "Checkmate"
+    case Draw:
+        return "Draw"
+    default:
+        return "Ongoing"
+    }
+}
+
+func CheckGameEnd(result GameResult) bool {
+    switch result {
+    case Ongoing:
+        return false
+    case Checkmate:
+        return true
+    case Draw:
+        return true
+	default:
+		return false
+	}
 }

@@ -16,6 +16,13 @@ func main() {
     reader := bufio.NewReader(os.Stdin)
 
     for {
+		allMoves := board.GenerateAllMoves(&gameState)
+
+		if board.CheckGameEnd(gameState.Results){
+			board.PrintResult(gameState.Results, gameState.WhiteToMove)
+			break
+		}
+
 		fmt.Print("Move (e.g. e2e4): ")
 		input, err := reader.ReadString('\n')
 		if err != nil {
@@ -31,9 +38,8 @@ func main() {
 
 		fmt.Println("You entered:", move)
 
-        allMoves := board.GenerateAllMoves(&gameState)
-
         err = board.MakeMove(&gameState, &allMoves, move)
+
         if err != nil {
             fmt.Println(err)
             continue
