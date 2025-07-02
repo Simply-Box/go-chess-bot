@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"strings"
 )
-
-// Patrik joins the battle!
-
 //TODO: Add checkmate, stalemate, 50  move rule, three same boardstate, halfmove
 
 //TODO: func GetPinnedPieces()
