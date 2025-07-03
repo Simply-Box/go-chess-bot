@@ -31,30 +31,55 @@ func main() {
 	board.PrintBoard(gameState.Board)
 	reader := bufio.NewReader(os.Stdin)
 
-	for {
-		fmt.Print("Move (e.g. e2e4): ")
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading input:", err)
-			continue
+	// Set to true if you want to play yourself
+	humanPlaying := false
+	if humanPlaying {
+		for {
+			allMoves := board.GenerateAllMoves(&gameState)
+
+			if board.CheckGameEnd(gameState.Results){
+				board.PrintResult(gameState.Results, gameState.WhiteToMove)
+				break
+			}
+
+			fmt.Print("Move (e.g. e2e4): ")
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input:", err)
+				continue
+			}
+
+			move := strings.TrimSpace(input)
+
+			if move == "exit" {
+				break
+			}
+
+			fmt.Println("You entered:", move)
+
+			err = board.CheckHumanMove(&gameState, &allMoves, move)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			board.PrintBoard(gameState.Board)
 		}
+	} else {
+		for {
+			allMoves := board.GenerateAllMoves(&gameState)
 
-		move := strings.TrimSpace(input)
+			if board.CheckGameEnd(gameState.Results){
+				board.PrintResult(gameState.Results, gameState.WhiteToMove)
+				break
+			}
 
-		if move == "exit" {
-			break
+			move := allMoves[1] // takes the second move
+
+			board.ApplyMove(&gameState, move)
+
+			board.PrintBoard(gameState.Board)
+			fmt.Println("_________________")
 		}
-
-		fmt.Println("You entered:", move)
-
-		allMoves := board.GenerateAllMoves(&gameState)
-
-		err = board.MakeMove(&gameState, &allMoves, move)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		board.PrintBoard(gameState.Board)
 	}
 }

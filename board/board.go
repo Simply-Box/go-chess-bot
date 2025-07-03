@@ -34,7 +34,7 @@ type GameState struct {
 	Castling    CastlingRights
 	EnPassant   Coord
 	Counters    MoveCounters
-	Results 	GameResult
+	Results     GameResult
 }
 
 // Castling rights
@@ -168,6 +168,9 @@ func GenerateAllMoves(gs *GameState) []Move {
 		//}
 
 	kRow, kCol := GetKing(gs)
+	if kRow == -1 && kCol == -1 {
+		gs.Results = Checkmate
+	}
 	for row := range 8 {
 		for col := range 8 {
 			piece := board[row][col]
@@ -205,6 +208,16 @@ func GenerateAllMoves(gs *GameState) []Move {
 			}
 		}
 	}
+
+	// Should this be a separat function and not be inside this function?
+	if len(allMoves) == 0  {
+		if IsInCheck(gs) {
+			gs.Results = Checkmate
+		} else {
+			gs.Results = Draw
+		}
+	}
+
 	return allMoves
 }
 
@@ -567,7 +580,7 @@ func GetKing(gs *GameState) (int, int) {
 			}
 		}
 	}
-	return 0, 0
+	return -1, -1
 }
 
 // Returns true if it is an enemy piece
@@ -792,6 +805,10 @@ func ApplyMove(gs *GameState, move Move) {
 		gs.Counters.HalfMove++
 	}
 
+	if gs.Counters.HalfMove >= 50 {
+		gs.Results = Draw
+	}
+
 	// Fullmove number
 	if !gs.WhiteToMove {
 		gs.Counters.FullMove++
@@ -853,7 +870,7 @@ func UpdateCastlingRights(cr *CastlingRights, move Move) {
 	}
 }
 
-func MakeMove(gs *GameState, allMoves *[]Move, input string) error {
+func CheckHumanMove(gs *GameState, allMoves *[]Move, input string) error {
 
 	// Input string into a Move struct
 	move, err := ParseMove(input, *gs)
