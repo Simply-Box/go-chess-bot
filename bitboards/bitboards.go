@@ -8,6 +8,22 @@ type Bitboard struct {
 	board uint64
 }
 
+func (bboard Bitboard) Add(bboard2 Bitboard) Bitboard {
+	return Bitboard{bboard.board ^ bboard2.board}
+}
+
+func (bboard Bitboard) Sub(bboard2 Bitboard) Bitboard {
+	return Bitboard{bboard.board &^ bboard2.board}
+}
+
+func (bboard Bitboard) And(bboard2 Bitboard) Bitboard {
+	return Bitboard{bboard.board & bboard2.board}
+}
+
+func (bboard Bitboard) Or(bboard2 Bitboard) Bitboard {
+	return Bitboard{bboard.board | bboard2.board}
+}
+
 // Directions used for pieces
 var (
 	knightDirs = [8][2]int{{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}}
@@ -48,6 +64,7 @@ func main() {
 	for i := range 64 {
 		Visualize(mp[uint8(i)])
 	}
+	Visualize(mp[uint8(2)].Add(mp[uint8(2)]))
 }
 
 // func CreateBoards () map[string]Bitboard {
