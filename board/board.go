@@ -5,17 +5,13 @@ import (
 	"strings"
 )
 
-// Patrik joins the battle!
-
 //TODO: Add checkmate, stalemate, 50  move rule, three same boardstate, halfmove
 
 //TODO: func GetPinnedPieces()
-//TODO: Add logic for GenerateAllMoves that doesn't include simulate all	
+//TODO: Add logic for GenerateAllMoves that doesn't include simulate all
 
 //TODO: If not in check don't put yourself in check (self pinned pieces)
 //TODO: Unit test
-//TODO: Change board into a hexadecimal and introduce bitboards
-
 //TODO: Remove Fullmove and therefore MoveCounters
 //TODO: Maybe import math instead of abs function?
 //TODO: Human promotion creates enemy color queen
@@ -34,7 +30,7 @@ type GameState struct {
 	Castling    CastlingRights
 	EnPassant   Coord
 	Counters    MoveCounters
-	Results 	GameResult
+	Results     GameResult
 }
 
 // Castling rights
@@ -61,9 +57,9 @@ type MoveCounters struct {
 type GameResult int
 
 const (
-    Ongoing GameResult = iota
-    Checkmate
-    Draw
+	Ongoing GameResult = iota
+	Checkmate
+	Draw
 )
 
 // Containing all relevant information about a single chess move
@@ -138,36 +134,39 @@ func GenerateAllMoves(gs *GameState) []Move {
 
 	// 	// IsInCheck(gs, isWhite) {
 
-		// calc all danger lines
+	// calc all danger lines
 
-		// calc all pieces that can't move
+	// calc all pieces that can't move
 
-		// gen all moves that end up on danger line
+	// gen all moves that end up on danger line
 
-		// what happens if several danger lines?
+	// what happens if several danger lines?
 
-		// gen all king
+	// gen all king
 
-		// if allMoves is empty; checkmate
+	// if allMoves is empty; checkmate
 
-		// 1. Try capturing checking piece
-		// 2. Try blocking (if attacker is sliding)
+	// 1. Try capturing checking piece
+	// 2. Try blocking (if attacker is sliding)
 
-		//attackSquare := checkingPieces[0]
-		//attackLine := []Coord{attackSquare}
+	//attackSquare := checkingPieces[0]
+	//attackLine := []Coord{attackSquare}
 
-		// Check if it's a sliding piece (rook, bishop, queen)
-		//if IsSlidingPiece(gs.Board[attackSquare.Row][attackSquare.Col]) {
-		// Calculate the line between the attacker and king
-		//attackLine = GetAttackLine(attackSquare, Coord{kingRow, kingCol})
-		//}
+	// Check if it's a sliding piece (rook, bishop, queen)
+	//if IsSlidingPiece(gs.Board[attackSquare.Row][attackSquare.Col]) {
+	// Calculate the line between the attacker and king
+	//attackLine = GetAttackLine(attackSquare, Coord{kingRow, kingCol})
+	//}
 
-		//if len(checkingPieces) >= 2 {
+	//if len(checkingPieces) >= 2 {
 
-		//	return GenerateKingMoves(board, row, col, isWhite, gs)
-		//}
+	//	return GenerateKingMoves(board, row, col, isWhite, gs)
+	//}
 
 	kRow, kCol := GetKing(gs)
+	if kRow == -1 && kCol == -1 {
+		gs.Results = Checkmate
+	}
 	for row := range 8 {
 		for col := range 8 {
 			piece := board[row][col]
@@ -577,7 +576,7 @@ func GetKing(gs *GameState) (int, int) {
 			}
 		}
 	}
-	return 0, 0
+	return -1, -1
 }
 
 // Returns true if it is an enemy piece
@@ -867,7 +866,7 @@ func UpdateCastlingRights(cr *CastlingRights, move Move) {
 	}
 }
 
-func MakeMove(gs *GameState, allMoves *[]Move, input string) error {
+func CheckHumanMove(gs *GameState, allMoves *[]Move, input string) error {
 
 	// Input string into a Move struct
 	move, err := ParseMove(input, *gs)
@@ -1044,6 +1043,47 @@ func Abs(x int) int {
 		return -x
 	}
 	return x
+}
+
+// Prints the result of the current GameState
+func PrintResult(Result GameResult, isWhite bool) {
+	switch Result {
+	case Checkmate:
+		if isWhite {
+			fmt.Println("Black wins")
+		} else {
+			fmt.Println("White wins")
+		}
+	case Draw:
+		fmt.Println("Draw")
+	}
+}
+
+// Makes GameResult struct able to be printed
+func (result GameResult) String() string {
+	switch result {
+	case Ongoing:
+		return "Ongoing"
+	case Checkmate:
+		return "Checkmate"
+	case Draw:
+		return "Draw"
+	default:
+		return "Ongoing"
+	}
+}
+
+func CheckGameEnd(result GameResult) bool {
+	switch result {
+	case Ongoing:
+		return false
+	case Checkmate:
+		return true
+	case Draw:
+		return true
+	default:
+		return false
+	}
 }
 
 // Returns true if two Move structs are the same
