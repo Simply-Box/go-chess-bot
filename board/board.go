@@ -1035,6 +1035,47 @@ func Abs(x int) int {
 	return x
 }
 
+// Prints the result of the current GameState
+func PrintResult(Result GameResult, isWhite bool) {
+	switch Result {
+	case Checkmate:
+		if isWhite {
+			fmt.Println("Black wins")
+		} else {
+			fmt.Println("White wins")
+		}
+	case Draw:
+		fmt.Println("Draw")
+	}
+}
+
+// Makes GameResult struct able to be printed
+func (result GameResult) String() string {
+	switch result {
+	case Ongoing:
+		return "Ongoing"
+	case Checkmate:
+		return "Checkmate"
+	case Draw:
+		return "Draw"
+	default:
+		return "Ongoing"
+	}
+}
+
+func CheckGameEnd(result GameResult) bool {
+	switch result {
+	case Ongoing:
+		return false
+	case Checkmate:
+		return true
+	case Draw:
+		return true
+	default:
+		return false
+	}
+}
+
 // Returns true if two Move structs are the same
 func (m Move) Equal(other Move) bool {
 	return m.FromRow == other.FromRow &&
