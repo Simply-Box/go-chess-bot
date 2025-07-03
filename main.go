@@ -10,13 +10,14 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 )
 
 func main() {
 	// Start pprof server in the background, http://localhost:6060/debug/pprof/
 	// In terminal after started main.go in another terminal:
-	//  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
-	// 	after 30 seconds you can run commands like: top, web(needs https://graphviz.org/download/)
+	//  go tool pprof http://localhost:6060/debug/pprof/profile?seconds=6
+	// 	after x seconds you can run commands like: top, web(needs https://graphviz.org/download/)
 	go func() {
 		log.Println("Starting pprof on http://localhost:6060/debug/pprof/")
 		err := http.ListenAndServe("localhost:6060", nil)
@@ -25,6 +26,8 @@ func main() {
 		}
 	}()
 
+	time.Sleep(3 * time.Second) // waits for things like performance checks
+  
 	log.Println(http.ListenAndServe("localhost:6060", nil))
 	fmt.Println("Starting Chess Engine...")
 	gameState := board.FENtoGameState(board.GetStartingFEN())
@@ -82,4 +85,5 @@ func main() {
 			fmt.Println("_________________")
 		}
 	}
+	//time.Sleep(20 * time.Second) // waits for things like performance checks
 }

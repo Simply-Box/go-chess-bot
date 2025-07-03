@@ -999,10 +999,56 @@ func FENtoGameState(fen string) GameState {
 
 	counters := MoveCounters{0, 1}
 
+	results := Ongoing
+
 	gameState := GameState{Board: board, WhiteToMove: isWhiteToMove,
-		Castling: castling, EnPassant: enPassantSquare, Counters: counters}
+		Castling: castling, EnPassant: enPassantSquare, Counters: counters, Results: results}
 
 	return gameState
+}
+
+func NewGameState()  GameState {
+	isWhiteToMove := true
+
+	castling := CastlingRights{WhiteKingside: true, WhiteQueenside: true, BlackKingside: true, BlackQueenside: true}
+
+	enPassantSquare := invalidCoord
+
+	counters := MoveCounters{0, 1}
+
+	results := Ongoing
+
+	gameState := GameState{WhiteToMove: isWhiteToMove,
+		Castling: castling, EnPassant: enPassantSquare, Counters: counters, Results: results}
+
+	return gameState
+}
+
+func NewSliceBoard() [][]string{
+	board := make([][]string, 8)
+	startingString := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+	position := strings.Split(startingString, "/")
+
+	for i, row := range position {
+		boardRow := make([]string, 0, 8)
+		for _, char := range row {
+			if char >= '1' && char <= '8' {
+				// add empty squares "."
+				numEmpty := int(char - '0')
+				for range numEmpty {
+					boardRow = append(boardRow, ".")
+				}
+			} else {
+				boardRow = append(boardRow, string(char))
+			}
+		}
+		board[i] = boardRow
+	}
+	return board
+}
+
+func NewBitboardBoard()  int {
+	return 0
 }
 
 // Converts 'e4' into a Coord struct
