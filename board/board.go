@@ -5,17 +5,13 @@ import (
 	"strings"
 )
 
-// Patrik joins the battle!
-
 //TODO: Add checkmate, stalemate, 50  move rule, three same boardstate, halfmove
 
 //TODO: func GetPinnedPieces()
-//TODO: Add logic for GenerateAllMoves that doesn't include simulate all	
+//TODO: Add logic for GenerateAllMoves that doesn't include simulate all
 
 //TODO: If not in check don't put yourself in check (self pinned pieces)
 //TODO: Unit test
-//TODO: Change board into a hexadecimal and introduce bitboards
-
 //TODO: Remove Fullmove and therefore MoveCounters
 //TODO: Maybe import math instead of abs function?
 //TODO: Human promotion creates enemy color queen
@@ -61,9 +57,9 @@ type MoveCounters struct {
 type GameResult int
 
 const (
-    Ongoing GameResult = iota
-    Checkmate
-    Draw
+	Ongoing GameResult = iota
+	Checkmate
+	Draw
 )
 
 // Containing all relevant information about a single chess move
@@ -138,34 +134,34 @@ func GenerateAllMoves(gs *GameState) []Move {
 
 	// 	// IsInCheck(gs, isWhite) {
 
-		// calc all danger lines
+	// calc all danger lines
 
-		// calc all pieces that can't move
+	// calc all pieces that can't move
 
-		// gen all moves that end up on danger line
+	// gen all moves that end up on danger line
 
-		// what happens if several danger lines?
+	// what happens if several danger lines?
 
-		// gen all king
+	// gen all king
 
-		// if allMoves is empty; checkmate
+	// if allMoves is empty; checkmate
 
-		// 1. Try capturing checking piece
-		// 2. Try blocking (if attacker is sliding)
+	// 1. Try capturing checking piece
+	// 2. Try blocking (if attacker is sliding)
 
-		//attackSquare := checkingPieces[0]
-		//attackLine := []Coord{attackSquare}
+	//attackSquare := checkingPieces[0]
+	//attackLine := []Coord{attackSquare}
 
-		// Check if it's a sliding piece (rook, bishop, queen)
-		//if IsSlidingPiece(gs.Board[attackSquare.Row][attackSquare.Col]) {
-		// Calculate the line between the attacker and king
-		//attackLine = GetAttackLine(attackSquare, Coord{kingRow, kingCol})
-		//}
+	// Check if it's a sliding piece (rook, bishop, queen)
+	//if IsSlidingPiece(gs.Board[attackSquare.Row][attackSquare.Col]) {
+	// Calculate the line between the attacker and king
+	//attackLine = GetAttackLine(attackSquare, Coord{kingRow, kingCol})
+	//}
 
-		//if len(checkingPieces) >= 2 {
+	//if len(checkingPieces) >= 2 {
 
-		//	return GenerateKingMoves(board, row, col, isWhite, gs)
-		//}
+	//	return GenerateKingMoves(board, row, col, isWhite, gs)
+	//}
 
 	kRow, kCol := GetKing(gs)
 	if kRow == -1 && kCol == -1 {
