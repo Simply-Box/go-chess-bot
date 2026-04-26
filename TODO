@@ -1,0 +1,32 @@
+Implement a 64-bit hash for position history to GameState
+    - Should inlcude relevant position info
+        - Not halfmove, fullmove, position history
+    - In applyMove reset history if pawn, capture or castle
+    - 3-fold-stalemate
+
+//TODO: func GetPinnedPieces (package: movegen)
+
+// GenerateAllMoves should be reworked (movegen)
+    Add logic for GenerateAllMoves that doesn't include simulate all
+    If not in check don't put yourself in check (self pinned pieces)
+
+// Random stuff:
+    - Should ParseMove set promoton and change name into SetMove
+    - var "invalidCoord" is unused,   package: types
+    - function NewBitboardBoard is not used and dos nothing????, package: board
+    - Unit test
+    - Maybe import math instead of abs function?
+
+    - Make GameState methods instead of functions?
+    - Add a Standard Algebraic Notation method to Move
+    - We don't need FullMove? Do we ever use the total number of moves played?
+
+// Function: IsSquareAttacked, (movegen)
+ 	Return variable k which increments with each attacker
+ 	check if != 0 instead of true outside of IsSquareAttacked
+ 	IsSquareAttacked can be used for advanced situations for legal moves for king
+
+// Add new: New Packages
+    Search - to search for best move
+    Uci - Universal Chess Interface, to talk to other programs
+    Eval - to evaluate the boardstate
